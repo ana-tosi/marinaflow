@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Servico;
+use App\Services\VerificacaoItens;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +16,7 @@ class UpdateServicoRequest extends FormRequest
     public function rules(): array
     {
         return [
+            ...($this->exists('verificacao_itens') ? VerificacaoItens::rules() : []),
             'descricao' => ['sometimes', 'required', 'array', 'min:1'],
             'descricao.*' => ['required', 'string'],
             'data_execucao' => ['sometimes', 'required', 'date'],

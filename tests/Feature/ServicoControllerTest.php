@@ -7,6 +7,7 @@ use App\Models\Funcionario;
 use App\Models\Servico;
 use App\Models\User;
 use App\Services\ServicoService;
+use App\Services\VerificacaoItens;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,6 +24,7 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
                 'descricao' => ['Limpeza', 'Motor'],
@@ -31,7 +33,8 @@ class ServicoControllerTest extends TestCase
             ->assertRedirect();
 
         $servico = Servico::query()->firstOrFail();
-        $this->assertSame(['Limpeza', 'Motor'], $servico->descricao);
+        $this->assertSame([], $servico->descricao);
+        $this->assertSame($this->verificacaoValida(), $servico->verificacao_itens);
         $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->status);
         $this->assertSame($admin->id, $servico->created_by_user_id);
         $this->assertSame($admin->id, $servico->updated_by_user_id);
@@ -47,6 +50,7 @@ class ServicoControllerTest extends TestCase
             foreach ([Servico::STATUS_EM_EXECUCAO, Servico::STATUS_CONCLUIDO, 'invalido'] as $status) {
                 $this->actingAs($autor)
                     ->post(route('servicos.store'), [
+                        'verificacao_itens' => $this->verificacaoValida(),
                         'embarcacao_id' => $embarcacao->id,
                         'funcionario_id' => $funcionario->id,
                         'descricao' => ['Limpeza'],
@@ -74,6 +78,7 @@ class ServicoControllerTest extends TestCase
 
         foreach ([Servico::STATUS_EM_EXECUCAO, Servico::STATUS_CONCLUIDO] as $status) {
             $servico = app(ServicoService::class)->criar([
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
                 'descricao' => ['Limpeza'],
@@ -93,6 +98,7 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => 999,
                 'funcionario_id' => $funcionario->id,
                 'descricao' => ['Limpeza'],
@@ -109,6 +115,7 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => 999,
                 'descricao' => ['Limpeza'],
@@ -125,6 +132,7 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
                 'descricao' => ['Limpeza'],
@@ -135,7 +143,7 @@ class ServicoControllerTest extends TestCase
         $this->assertDatabaseCount('servicos', 0);
     }
 
-    public function test_descricao_e_data_sao_obrigatorias(): void
+    public function test_verificacao_e_data_sao_obrigatorias(): void
     {
         $admin = User::factory()->admin()->create();
         $funcionario = Funcionario::factory()->create();
@@ -146,7 +154,7 @@ class ServicoControllerTest extends TestCase
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
             ])
-            ->assertSessionHasErrors(['descricao', 'data_execucao']);
+            ->assertSessionHasErrors(['verificacao_itens', 'data_execucao']);
     }
 
     /** O `funcionario_id` enviado é ignorado e substituído pelo do usuário logado. */
@@ -158,6 +166,7 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
                 'descricao' => ['Limpeza'],
@@ -178,6 +187,7 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
                 'descricao' => ['Limpeza'],
@@ -196,6 +206,7 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
                 'descricao' => ['Limpeza'],
@@ -362,5 +373,13 @@ class ServicoControllerTest extends TestCase
         $user = User::factory()->create(['funcionario_id' => $funcionario->id]);
 
         return [$user, $funcionario];
+    }
+
+    private function verificacaoValida(): array
+    {
+        return [
+            'equipamentos' => array_fill_keys(array_keys(VerificacaoItens::EQUIPAMENTOS), 'funcionamento_ok'),
+            'atividade' => 'limpeza',
+        ];
     }
 }

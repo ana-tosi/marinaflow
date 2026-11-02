@@ -40,6 +40,10 @@ class ServicoService
             ]);
         }
 
+        VerificacaoItens::validate($data);
+        // Descrição é exclusiva do legado; os novos dados vivem na MEL02.
+        $data['descricao'] = [];
+
         return Servico::query()->create([
             ...$data,
             'status' => Servico::STATUS_AGUARDANDO_VISTORIA,
@@ -73,6 +77,16 @@ class ServicoService
             && $servico->status !== Servico::STATUS_EM_EXECUCAO) {
             throw ValidationException::withMessages([
                 'status' => 'Serviço não pode retornar ao status em execução.',
+            ]);
+        }
+
+        if (array_key_exists('verificacao_itens', $data)) {
+            VerificacaoItens::validate($data);
+        }
+
+        if ($servico->verificacao_itens !== null && array_key_exists('descricao', $data)) {
+            throw ValidationException::withMessages([
+                'descricao' => 'Este registro utiliza a classificação de equipamentos e atividades.',
             ]);
         }
 

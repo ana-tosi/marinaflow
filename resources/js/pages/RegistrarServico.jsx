@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Head, useForm as useInertiaForm, usePage } from '@inertiajs/react';
 import {
-    Title, Button, Select, Checkbox, Textarea, Group, Stack, Paper, Text,
-    Alert, SimpleGrid,
+    Title, Button, Select, Textarea, Group, Stack, Paper, Text,
+    Alert,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
 import { IconTool, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
-import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
+import VerificacaoItens, { novaVerificacao } from '@/components/VerificacaoItens';
 import 'dayjs/locale/pt-br';
 
 export default function RegistrarServico({ embarcacoes, funcionarios }) {
@@ -21,7 +21,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
     const { data, setData, post, processing, errors, reset } = useInertiaForm({
         embarcacao_id: null,
         funcionario_id: isAdmin ? null : (funcionarioId ? String(funcionarioId) : null),
-        descricao: [],
+        verificacao_itens: novaVerificacao(),
         data_execucao: new Date(),
         observacao: '',
     });
@@ -41,7 +41,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
             }),
             preserveScroll: true,
             onSuccess: () => {
-                reset('embarcacao_id', 'descricao', 'observacao');
+                reset('embarcacao_id', 'verificacao_itens', 'observacao');
                 if (!isAdmin && funcionarioId) {
                     setData('funcionario_id', String(funcionarioId));
                 }
@@ -139,23 +139,11 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                                 error={errors.data_execucao}
                             />
 
-                            <Checkbox.Group
-                                label="Serviços Realizados"
-                                required
-                                value={data.descricao}
-                                onChange={(v) => setData('descricao', v)}
-                                error={errors.descricao}
-                            >
-                                <SimpleGrid cols={2} spacing="xl" mt="xs">
-                                    {SERVICO_OPTION_COLUMNS.map((column, index) => (
-                                        <Stack key={index} gap="xs">
-                                            {column.map((servico) => (
-                                                <Checkbox key={servico} value={servico} label={servico} />
-                                            ))}
-                                        </Stack>
-                                    ))}
-                                </SimpleGrid>
-                            </Checkbox.Group>
+                            <VerificacaoItens
+                                value={data.verificacao_itens}
+                                onChange={(value) => setData('verificacao_itens', value)}
+                                errors={errors}
+                            />
 
                             <Textarea
                                 label="Observações"
@@ -171,7 +159,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                                 <Button
                                     variant="default"
                                     onClick={() => {
-                                        reset('embarcacao_id', 'descricao', 'observacao');
+                                        reset('embarcacao_id', 'verificacao_itens', 'observacao');
                                         if (!isAdmin && funcionarioId) {
                                             setData('funcionario_id', String(funcionarioId));
                                         }

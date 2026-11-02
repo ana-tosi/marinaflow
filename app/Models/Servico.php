@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'embarcacao_id',
     'funcionario_id',
     'descricao',
+    'verificacao_itens',
     'data_execucao',
     'status',
     'observacao',
@@ -45,6 +46,7 @@ class Servico extends Model
         return [
             'data_execucao' => 'date',
             'descricao' => 'array',
+            'verificacao_itens' => 'array',
         ];
     }
 

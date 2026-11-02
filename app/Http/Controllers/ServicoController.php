@@ -55,6 +55,7 @@ class ServicoController extends Controller
                 'funcionario_id' => $s->funcionario_id,
                 'funcionario_nome' => $s->funcionario?->nome,
                 'descricao' => $s->descricao,
+                'verificacao_itens' => $s->verificacao_itens,
                 'data_execucao' => $s->data_execucao?->toDateString(),
                 'status' => $s->status,
                 'observacao' => $s->observacao,

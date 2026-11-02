@@ -9,6 +9,7 @@ import { notifications } from '@mantine/notifications';
 import { IconHistory, IconDotsVertical, IconCheck, IconShip, IconEdit } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
 import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
+import VerificacaoItens, { novaVerificacao, ResumoVerificacao } from '@/components/VerificacaoItens';
 
 const STATUS_CONFIG = {
     em_execucao: { label: 'Em Execução', color: 'blue' },
@@ -52,9 +53,9 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
     }, [flash]);
 
     const editForm = useForm({
-        initialValues: { descricao: [], observacao: '', status: '' },
+        initialValues: { descricao: [], verificacao_itens: null, observacao: '', status: '' },
         validate: {
-            descricao: (v) => (v.length === 0 ? 'Selecione ao menos um serviço' : null),
+            descricao: (v, values) => (!values.verificacao_itens && v.length === 0 ? 'Selecione ao menos um serviço' : null),
         },
     });
 
@@ -70,6 +71,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
         setEditando(srv);
         editForm.setValues({
             descricao: srv.descricao || [],
+            verificacao_itens: srv.verificacao_itens || null,
             observacao: srv.observacao || '',
             status: srv.status,
         });
@@ -80,7 +82,9 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
         router.put(
             route('servicos.update', editando.id),
             {
-                descricao: values.descricao,
+                ...(values.verificacao_itens
+                    ? { verificacao_itens: values.verificacao_itens }
+                    : { descricao: values.descricao }),
                 observacao: values.observacao || null,
                 ...(values.status !== editando.status ? { status: values.status } : {}),
             },
@@ -199,8 +203,12 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
                                         <Table.Td>{srv.embarcacao_nome || '—'}</Table.Td>
                                         <Table.Td>{srv.funcionario_nome || '—'}</Table.Td>
                                         <Table.Td>
-                                            <Text size="sm" lineClamp={2}>
-                                                {srv.descricao?.join(', ')}
+                                            <Text component="div" size="sm">
+                                                {srv.verificacao_itens ? (
+                                                    <ResumoVerificacao value={srv.verificacao_itens} />
+                                                ) : (
+                                                    <>{srv.descricao?.join(', ')}<Text size="xs" c="dimmed">Registro antigo — sem classificação MEL02</Text></>
+                                                )}
                                             </Text>
                                             {srv.observacao && (
                                                 <Text size="xs" c="dimmed" lineClamp={1}>
@@ -271,17 +279,31 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
             >
                 <form onSubmit={editForm.onSubmit(salvarEdicao)}>
                     <Stack gap="sm">
-                        <Checkbox.Group label="Serviços Realizados" required {...editForm.getInputProps('descricao')}>
-                            <SimpleGrid cols={2} spacing="xl" mt="xs">
-                                {SERVICO_OPTION_COLUMNS.map((column, index) => (
-                                    <Stack key={index} gap="xs">
-                                        {column.map((servico) => (
-                                            <Checkbox key={servico} value={servico} label={servico} />
+                        {editForm.values.verificacao_itens ? (
+                            <VerificacaoItens
+                                value={editForm.values.verificacao_itens}
+                                onChange={(value) => editForm.setFieldValue('verificacao_itens', value)}
+                                errors={editForm.errors}
+                            />
+                        ) : (
+                            <>
+                                <Text size="sm" c="dimmed">Registro antigo — classificações não informadas.</Text>
+                                <Checkbox.Group label="Serviços Realizados" required {...editForm.getInputProps('descricao')}>
+                                    <SimpleGrid cols={2} spacing="xl" mt="xs">
+                                        {SERVICO_OPTION_COLUMNS.map((column, index) => (
+                                            <Stack key={index} gap="xs">
+                                                {column.map((servico) => (
+                                                    <Checkbox key={servico} value={servico} label={servico} />
+                                                ))}
+                                            </Stack>
                                         ))}
-                                    </Stack>
-                                ))}
-                            </SimpleGrid>
-                        </Checkbox.Group>
+                                    </SimpleGrid>
+                                </Checkbox.Group>
+                                <Button variant="subtle" onClick={() => editForm.setFieldValue('verificacao_itens', novaVerificacao())}>
+                                    Classificar equipamentos e atividade
+                                </Button>
+                            </>
+                        )}
 
                         <Textarea label="Observações" minRows={3} {...editForm.getInputProps('observacao')} />
 

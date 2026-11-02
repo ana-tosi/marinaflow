@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\VerificacaoItens;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,8 +22,7 @@ class StoreServicoRequest extends FormRequest
         return [
             'embarcacao_id' => ['required', 'integer', Rule::exists('embarcacoes', 'id')],
             'funcionario_id' => ['required', 'integer', Rule::exists('funcionarios', 'id')],
-            'descricao' => ['required', 'array', 'min:1'],
-            'descricao.*' => ['required', 'string'],
+            ...VerificacaoItens::rules(),
             'data_execucao' => ['required', 'date'],
             'observacao' => ['nullable', 'string'],
         ];
